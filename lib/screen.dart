@@ -1,5 +1,59 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+class LatestDataWidget extends StatelessWidget {
+  const LatestDataWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('data')
+          .orderBy('timestamp', descending: true)
+          .limit(1)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const CircularProgressIndicator();
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Text('No data available.');
+        }
+
+        final doc = snapshot.data!.docs.first;
+        final data = doc.data() as Map<String, dynamic>;
+
+        // Handle timestamp (Firestore Timestamp or string fallback)
+        String formattedTimestamp = 'Unknown';
+        final ts = data['timestamp'];
+        if (ts is Timestamp) {
+          formattedTimestamp =
+              DateFormat('yyyy-MM-dd HH:mm:ss').format(ts.toDate());
+        } else if (ts is String) {
+          formattedTimestamp = ts;
+        }
+
+        return Card(
+          margin: const EdgeInsets.all(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Humidity: ${data['humidity'] ?? '-'}'),
+                Text('Peltier Status: ${data['peltier_status'] ?? '-'}'),
+                Text('System State: ${data['system_state'] ?? '-'}'),
+                Text('Temperature: ${data['temperature'] ?? '-'}'),
+                Text('Timestamp: $formattedTimestamp'),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
 
 class StorageMonitorScreen extends StatelessWidget {
   const StorageMonitorScreen({super.key});
