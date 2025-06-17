@@ -20,7 +20,6 @@ class LatestDataWidget extends StatelessWidget {
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const Text('No data available.');
         }
-
         final doc = snapshot.data!.docs.first;
         final data = doc.data() as Map<String, dynamic>;
 
