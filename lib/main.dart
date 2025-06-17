@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'home_page.dart';
+import 'screen.dart'; // Make sure screen.dart is in the same folder
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,14 +14,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Ammunitility',
+      title: 'Storage Monitor',
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        useMaterial3: true,
       ),
-      home: Scaffold(
-        appBar: AppBar(title: const Text('Ammunitility Home')),
-        body: Center(child: LatestDataWidget()),
-      ),
+      home: const StorageMonitorScreen(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
