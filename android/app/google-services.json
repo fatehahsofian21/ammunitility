@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "51394004279",
+    "project_id": "ammunitility",
+    "storage_bucket": "ammunitility.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:51394004279:android:a4bec9f1b9975ec03b86b2",
+        "android_client_info": {
+          "package_name": "com.company.ammunitility"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCw_hjE1284s6u3CXAQPuzsqzj173wX4-g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
