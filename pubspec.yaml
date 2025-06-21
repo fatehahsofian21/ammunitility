@@ -12,13 +12,14 @@ dependencies:
     sdk: flutter
 
   # Firebase core for initialization
-  firebase_core: ^2.25.4
 
   # Cloud Firestore for reading sensor data
-  cloud_firestore: ^4.13.4
 
   # iOS-style icons
   cupertino_icons: ^1.0.8
+  firebase_core: ^3.14.0
+  cloud_firestore: ^5.6.9
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:

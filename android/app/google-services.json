@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:51394004279:android:a4bec9f1b9975ec03b86b2",
+        "mobilesdk_app_id": "1:51394004279:android:f08abcc3c97565443b86b2",
         "android_client_info": {
-          "package_name": "com.company.ammunitility"
+          "package_name": "com.example.ammunitility"
         }
       },
       "oauth_client": [],
