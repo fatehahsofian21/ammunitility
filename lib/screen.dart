@@ -1,158 +1,150 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-class LatestDataWidget extends StatelessWidget {
-  const LatestDataWidget({super.key});
+class StorageMonitorScreen extends StatefulWidget {
+  const StorageMonitorScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('data')
-          .orderBy('timestamp', descending: true)
-          .limit(1)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const CircularProgressIndicator();
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Text('No data available.');
-        }
-        final doc = snapshot.data!.docs.first;
-        final data = doc.data() as Map<String, dynamic>;
-
-        // Handle timestamp (Firestore Timestamp or string fallback)
-        String formattedTimestamp = 'Unknown';
-        final ts = data['timestamp'];
-        if (ts is Timestamp) {
-          formattedTimestamp =
-              DateFormat('yyyy-MM-dd HH:mm:ss').format(ts.toDate());
-        } else if (ts is String) {
-          formattedTimestamp = ts;
-        }
-
-        return Card(
-          margin: const EdgeInsets.all(16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Humidity: ${data['humidity'] ?? '-'}'),
-                Text('Peltier Status: ${data['peltier_status'] ?? '-'}'),
-                Text('System State: ${data['system_state'] ?? '-'}'),
-                Text('Temperature: ${data['temperature'] ?? '-'}'),
-                Text('Timestamp: $formattedTimestamp'),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+  State<StorageMonitorScreen> createState() => _StorageMonitorScreenState();
 }
 
-class StorageMonitorScreen extends StatelessWidget {
-  const StorageMonitorScreen({super.key});
+class _StorageMonitorScreenState extends State<StorageMonitorScreen> {
+  bool isSystemOn = false;
+  double temperature = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _listenToSystemState();
+    _listenToLatestTemperature();
+  }
+
+  void _listenToSystemState() {
+    FirebaseFirestore.instance
+        .collection('events')
+        .doc('system_control')
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.exists) {
+        setState(() {
+          isSystemOn = (snapshot.data()?['system_state'] ?? 'OFF') == 'ON';
+        });
+      }
+    });
+  }
+
+  void _listenToLatestTemperature() {
+    FirebaseFirestore.instance
+        .collection('data')
+        .orderBy('timestamp', descending: true)
+        .limit(1)
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.docs.isNotEmpty) {
+        final data = snapshot.docs.first.data();
+        setState(() {
+          temperature = (data['temperature'] ?? 0.0).toDouble();
+        });
+      }
+    });
+  }
+
+  void _toggleSystemState() async {
+    final newState = isSystemOn ? 'OFF' : 'ON';
+    await FirebaseFirestore.instance
+        .collection('events')
+        .doc('system_control')
+        .update({'system_state': newState});
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('STORAGE MONITOR'),
-        centerTitle: true,
-        backgroundColor: Colors.blueAccent,
-      ),
-      body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('data')
-            .doc('latest_state')
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final data = snapshot.data!.data() as Map<String, dynamic>;
-          final double temperature = data['temperature'] ?? 0.0;
-          final double humidity = data['humidity'] ?? 0.0;
-          final String status = data['peltier_status'] ?? 'OFF';
-
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Circular Temperature Dial
-                Stack(
-                  alignment: Alignment.center,
+      backgroundColor: const Color(0xFF3A2F2F), // dark brown
+      body: Column(
+        children: [
+          const SizedBox(height: 60), // spacing from top
+          const Text(
+            'STORAGE MONITOR',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 80),
+          isSystemOn
+              ? Column(
                   children: [
-                    SizedBox(
-                      width: 180,
-                      height: 180,
-                      child: CircularProgressIndicator(
-                        value: temperature / 100,
-                        strokeWidth: 10,
-                        valueColor:
-                            const AlwaysStoppedAnimation<Color>(Colors.orange),
-                        backgroundColor: Colors.orange.withOpacity(0.2),
+                    Text(
+                      '${temperature.toStringAsFixed(1)}°C',
+                      style: const TextStyle(
+                        fontSize: 40,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Column(
-                      children: [
-                        Text(
-                          '${temperature.toStringAsFixed(1)}°C',
-                          style: const TextStyle(
-                              fontSize: 28, fontWeight: FontWeight.bold),
-                        ),
-                        const Text('Temp', style: TextStyle(fontSize: 16)),
-                      ],
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Temperature',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.white70,
+                      ),
                     ),
                   ],
-                ),
-
-                const SizedBox(height: 30),
-
-                // Humidity
-                Text(
-                  '${humidity.toStringAsFixed(1)}% Humidity',
-                  style: const TextStyle(
-                    fontSize: 22,
-                    color: Colors.blueGrey,
+                )
+              : const Expanded(
+                  child: Center(
+                    child: Text(
+                      'SYSTEM IS OFF',
+                      style: TextStyle(
+                        color: Colors.redAccent,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
-
-                const SizedBox(height: 20),
-
-                // Peltier Status
-                Text(
-                  'Status: $status',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: status == 'ON' ? Colors.green : Colors.red,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                const SizedBox(height: 30),
-
-                // Power Button (just shows snackbar now)
-                IconButton(
-                  icon: const Icon(Icons.power_settings_new),
-                  iconSize: 50,
-                  color: Colors.redAccent,
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Status: $status')),
-                    );
-                  },
-                ),
-              ],
+          const Spacer(),
+          Container(
+            height: MediaQuery.of(context).size.height * 0.25,
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              color: Color(0xFFF1F1F1), // light grey
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(30),
+                topRight: Radius.circular(30),
+              ),
             ),
-          );
-        },
+            child: Center(
+              child: GestureDetector(
+                onTap: _toggleSystemState,
+                child: Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.power_settings_new,
+                    color: isSystemOn ? Colors.green : Colors.red,
+                    size: 40,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
